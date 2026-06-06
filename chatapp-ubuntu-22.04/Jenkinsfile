@@ -1,0 +1,65 @@
+pipeline {
+agent any
+
+```
+environment {
+    DJANGO_HOST = "172.31.46.208"
+    DJANGO_USER = "django_user"
+    REMOTE_PATH = "/chatapp-ubuntu-22.04"
+}
+
+stages {
+
+    stage('Clone Repository') {
+        steps {
+            git branch: 'main',
+                url: 'https://github.com/Maverick1950/Jenkins_chat_app.git'
+        }
+    }
+
+    stage('Copy Code To Django Server') {
+    steps {
+        sshagent(credentials: ['controller-key']) {
+            sh '''
+            rsync -av --delete \
+            -e "ssh -o StrictHostKeyChecking=no" \
+            --exclude '.git' \
+            --exclude 'venv' \
+            /var/lib/jenkins/workspace/Chat-app/ \
+            ${DJANGO_USER}@${DJANGO_HOST}:${REMOTE_PATH}/
+            '''
+        }
+    }
+    }
+
+    stage('Run Migration') {
+        steps {
+            sshagent(credentials: ['controller-key']) {
+                sh '''
+                ssh -o StrictHostKeyChecking=no \
+                ${DJANGO_USER}@${DJANGO_HOST} "
+                    cd /chatapp-ubuntu-22.04/fundoo && \
+                    source venv/bin/activate && \
+                    python manage.py migrate --noinput
+                "
+                '''
+            }
+        }
+    }
+
+    stage('Restart Gunicorn') {
+        steps {
+            sshagent(credentials: ['controller-key']) {
+                sh '''
+                ssh -o StrictHostKeyChecking=no \
+                ${DJANGO_USER}@${DJANGO_HOST} "
+                    sudo systemctl restart gunicorn
+                "
+                '''
+            }
+        }
+    }
+}
+```
+
+}
