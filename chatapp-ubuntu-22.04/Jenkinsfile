@@ -1,7 +1,6 @@
 pipeline {
 agent any
 
-```
 environment {
     DJANGO_HOST = "172.31.46.208"
     DJANGO_USER = "django_user"
@@ -60,6 +59,5 @@ stages {
         }
     }
 }
-```
 
 }
