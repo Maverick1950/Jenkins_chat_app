@@ -24,12 +24,12 @@ stages {
             -e "ssh -o StrictHostKeyChecking=no" \
             --exclude '.git' \
             --exclude 'venv' \
-            /var/lib/jenkins/workspace/Chat-app/ \
+            ${WORKSPACE}/chatapp-ubuntu-22.04/ \
             ${DJANGO_USER}@${DJANGO_HOST}:${REMOTE_PATH}/
             '''
         }
     }
-    }
+}
 
     stage('Run Migration') {
         steps {
