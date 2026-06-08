@@ -45,7 +45,7 @@ pipeline {
 
         stage('Deploy to Django Server') {
             steps {
-                sshagent(credentials: ['agent-key']) {
+                sshagent(credentials: ['controller-key']) {
                     sh """
                     rsync -av --delete \
                     -e "ssh -o StrictHostKeyChecking=no" \
@@ -60,7 +60,7 @@ pipeline {
 
         stage('Run Migration') {
             steps {
-                sshagent(credentials: ['agent-key']) {
+                sshagent(credentials: ['controller-key']) {
                     sh """
                     ssh -o StrictHostKeyChecking=no ${DJANGO_USER}@${DJANGO_HOST} '
                         cd ${REMOTE_PATH}/fundoo &&
@@ -74,7 +74,7 @@ pipeline {
 
         stage('Restart Gunicorn') {
             steps {
-                sshagent(credentials: ['agent-key']) {
+                sshagent(credentials: ['controller-key']) {
                     sh """
                     ssh -o StrictHostKeyChecking=no ${DJANGO_USER}@${DJANGO_HOST} '
                         sudo systemctl restart gunicorn
