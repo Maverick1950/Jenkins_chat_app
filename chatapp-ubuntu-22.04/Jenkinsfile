@@ -5,6 +5,8 @@ pipeline {
         DJANGO_HOST = "172.31.46.208"
         DJANGO_USER = "django_user"
         REMOTE_PATH = "/chatapp-ubuntu-22.04"
+        SONAR_PROJECT_KEY = "chatapp"
+        SONAR_PROJECT_NAME = "ChatApp"
     }
 
     stages {
@@ -17,16 +19,20 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-    steps {
-        withSonarQubeEnv('Sonarqube') {
-            dir("${WORKSPACE}/chatapp-ubuntu-22.04/fundoo") {
-                sh """
-                /home/ubuntu/jenkins/tools/hudson.plugins.sonar.SonarRunnerInstallation/SonarScanner/bin/sonar-scanner
-                """
+            steps {
+                withSonarQubeEnv('Sonarqube') {
+                    dir("${WORKSPACE}/chatapp-ubuntu-22.04/fundoo") {
+                        sh """
+                        /home/ubuntu/jenkins/tools/hudson.plugins.sonar.SonarRunnerInstallation/SonarScanner/bin/sonar-scanner \
+                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                        -Dsonar.projectName=${SONAR_PROJECT_NAME} \
+                        -Dsonar.sources=. \
+                        -Dsonar.sourceEncoding=UTF-8
+                        """
+                    }
+                }
             }
         }
-    }
-}
 
         stage('Quality Gate') {
             steps {
@@ -56,7 +62,7 @@ pipeline {
                 sshagent(credentials: ['agent-key']) {
                     sh """
                     ssh -o StrictHostKeyChecking=no ${DJANGO_USER}@${DJANGO_HOST} '
-                        cd /chatapp-ubuntu-22.04/fundoo &&
+                        cd ${REMOTE_PATH}/fundoo &&
                         source venv/bin/activate &&
                         python manage.py migrate --noinput
                     '
