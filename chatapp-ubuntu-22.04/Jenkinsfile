@@ -23,14 +23,17 @@ pipeline {
 
         
 
-        stage('Sonarqube Analysis') {
+        stage('SonarQube Analysis') {
     steps {
-        dir('chatapp-ubuntu-22.04') {
-            script {
-                def scannerHome = tool 'SonarScanner'
-                withSonarQubeEnv('Sonarqube') {
-                    sh "${scannerHome}/bin/sonar-scanner"
-                }
+        script {
+            def scannerHome = tool 'SonarScanner'
+
+            withSonarQubeEnv('Sonarqube') {
+                sh """
+                cd ${WORKSPACE}
+                ls -la
+                ${scannerHome}/bin/sonar-scanner
+                """
             }
         }
     }
