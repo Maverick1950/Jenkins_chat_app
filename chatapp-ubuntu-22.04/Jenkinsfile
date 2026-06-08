@@ -1,5 +1,6 @@
 pipeline {
-    agent { label 'djangonode' }
+    // agent { label 'djangonode' }
+    agent any
 
     environment {
         DJANGO_HOST = "172.31.46.208"
