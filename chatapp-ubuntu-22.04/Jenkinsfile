@@ -19,21 +19,33 @@ pipeline {
             }
         }
 
+        // stage('SonarQube Analysis') {
+        //     steps {
+        //         withSonarQubeEnv('Sonarqube') {
+        //             dir("${WORKSPACE}/chatapp-ubuntu-22.04") {
+        //                 sh """
+        //                 /home/ubuntu/jenkins/tools/hudson.plugins.sonar.SonarRunnerInstallation/SonarScanner/bin/sonar-scanner \
+        //                 -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+        //                 -Dsonar.projectName=${SONAR_PROJECT_NAME} \
+        //                 -Dsonar.sources=. \
+        //                 -Dsonar.sourceEncoding=UTF-8
+        //                 """
+        //             }
+        //         }
+        //     }
+        // }
+
         stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('Sonarqube') {
-                    dir("${WORKSPACE}/chatapp-ubuntu-22.04") {
-                        sh """
-                        /home/ubuntu/jenkins/tools/hudson.plugins.sonar.SonarRunnerInstallation/SonarScanner/bin/sonar-scanner \
-                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                        -Dsonar.projectName=${SONAR_PROJECT_NAME} \
-                        -Dsonar.sources=. \
-                        -Dsonar.sourceEncoding=UTF-8
-                        """
-                    }
-                }
+    steps {
+        withSonarQubeEnv('Sonarqube') {
+            dir("${WORKSPACE}/chatapp-ubuntu-22.04") {
+                sh """
+                /home/ubuntu/jenkins/tools/hudson.plugins.sonar.SonarRunnerInstallation/SonarScanner/bin/sonar-scanner
+                """
             }
         }
+    }
+}
 
         stage('Quality Gate') {
             steps {
