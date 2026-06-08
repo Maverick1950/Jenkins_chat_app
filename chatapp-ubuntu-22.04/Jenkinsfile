@@ -1,88 +1,88 @@
 pipeline {
-agent {
-    label 'djangonode'
-}
-environment {
-    DJANGO_HOST = "172.31.46.208"
-    DJANGO_USER = "django_user"
-    REMOTE_PATH = "/chatapp-ubuntu-22.04"
-}
-
-stages {
-
-    stage('Clone Repository') {
-        steps {
-            git branch: 'main',
-                url: 'https://github.com/Maverick1950/Jenkins_chat_app.git'
-        }
+    agent {
+        label 'djangonode'
     }
 
-    stage('Sonarqube Analysis') {
-    steps {
-        dir('chatapp-ubuntu-22.04') {
-            script {
-                def scannerHome = tool 'SonarScanner'
+    environment {
+        DJANGO_HOST = "172.31.46.208"
+        DJANGO_USER = "django_user"
+        REMOTE_PATH = "/chatapp-ubuntu-22.04"
 
-                withSonarQubeEnv('Sonarqube') {
-                    sh "${scannerHome}/bin/sonar-scanner"
+        // 🔥 FIX: Force Sonar to use system Node (prevents embedded runtime crash)
+        SONAR_SCANNER_OPTS = "-Dsonar.javascript.node=/usr/bin/node"
+    }
+
+    stages {
+
+        stage('Clone Repository') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/Maverick1950/Jenkins_chat_app.git'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool 'SonarScanner'
+
+                    withSonarQubeEnv('Sonarqube') {
+                        sh """
+                        ${scannerHome}/bin/sonar-scanner \
+                        -Dsonar.javascript.node=/usr/bin/node
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Copy Code To Django Server') {
+            steps {
+                sshagent(credentials: ['agent-key']) {
+                    sh """
+                    rsync -av --delete \
+                    -e \"ssh -o StrictHostKeyChecking=no\" \
+                    --exclude '.git' \
+                    --exclude 'venv' \
+                    ${WORKSPACE}/chatapp-ubuntu-22.04/ \
+                    ${DJANGO_USER}@${DJANGO_HOST}:${REMOTE_PATH}/
+                    """
+                }
+            }
+        }
+
+        stage('Run Migration') {
+            steps {
+                sshagent(credentials: ['agent-key']) {
+                    sh """
+                    ssh -o StrictHostKeyChecking=no ${DJANGO_USER}@${DJANGO_HOST} '
+                        cd /chatapp-ubuntu-22.04/fundoo && \
+                        source venv/bin/activate && \
+                        python manage.py migrate --noinput
+                    '
+                    """
+                }
+            }
+        }
+
+        stage('Restart Gunicorn') {
+            steps {
+                sshagent(credentials: ['agent-key']) {
+                    sh """
+                    ssh -o StrictHostKeyChecking=no ${DJANGO_USER}@${DJANGO_HOST} '
+                        sudo systemctl restart gunicorn
+                    '
+                    """
                 }
             }
         }
     }
-}
-
-stage('Quality Gate') {
-    steps {
-        timeout(time: 5, unit: 'MINUTES') {
-            waitForQualityGate abortPipeline: true
-        }
-    }
-}
-
-    
-
-    stage('Copy Code To Django Server') {
-        steps {
-            sshagent(credentials: ['agent-key']) {
-                sh '''
-                rsync -av --delete \
-                -e "ssh -o StrictHostKeyChecking=no" \
-                --exclude '.git' \
-                --exclude 'venv' \
-                ${WORKSPACE}/chatapp-ubuntu-22.04/ \
-                ${DJANGO_USER}@${DJANGO_HOST}:${REMOTE_PATH}/
-                '''
-            }
-        }
-    }
-
-    stage('Run Migration') {
-        steps {
-            sshagent(credentials: ['agent-key']) {
-                sh '''
-                ssh -o StrictHostKeyChecking=no \
-                ${DJANGO_USER}@${DJANGO_HOST} "
-                    cd /chatapp-ubuntu-22.04/fundoo && \
-                    source venv/bin/activate && \
-                    python manage.py migrate --noinput
-                "
-                '''
-            }
-        }
-    }
-
-    stage('Restart Gunicorn') {
-        steps {
-            sshagent(credentials: ['agent-key']) {
-                sh '''
-                ssh -o StrictHostKeyChecking=no \
-                ${DJANGO_USER}@${DJANGO_HOST} "
-                    sudo systemctl restart gunicorn
-                "
-                '''
-            }
-        }
-    }
-}
-
 }
