@@ -19,10 +19,14 @@ pipeline {
         stage('SonarQube Analysis') {
     steps {
         dir('chatapp-ubuntu-22.04') {
-            withSonarQubeEnv('Sonarqube') {
-                sh """
-                /home/ubuntu/jenkins/tools/hudson.plugins.sonar.SonarRunnerInstallation/SonarScanner/bin/sonar-scanner
-                """
+            sshagent(credentials: ['agent-key']) {
+                withSonarQubeEnv('Sonarqube') {
+                    sh """
+                    set -e
+                    export SONAR_SCANNER_OPTS="-Xmx2g"
+                    /home/ubuntu/jenkins/tools/hudson.plugins.sonar.SonarRunnerInstallation/SonarScanner/bin/sonar-scanner
+                    """
+                }
             }
         }
     }
