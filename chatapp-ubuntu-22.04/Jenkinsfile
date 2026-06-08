@@ -21,26 +21,20 @@ pipeline {
             }
         }
 
-        stage('Debug Workspace') {
+        
+
+        stage('Sonarqube Analysis') {
     steps {
-        sh "ls -R ${WORKSPACE}"
-    }
-}
-
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    def scannerHome = tool 'SonarScanner'
-
-                    withSonarQubeEnv('Sonarqube') {
-                        sh """
-                        ${scannerHome}/bin/sonar-scanner \
-                        -Dsonar.javascript.node=/usr/bin/node
-                        """
-                    }
+        dir('chatapp-ubuntu-22.04') {
+            script {
+                def scannerHome = tool 'SonarScanner'
+                withSonarQubeEnv('Sonarqube') {
+                    sh "${scannerHome}/bin/sonar-scanner"
                 }
             }
         }
+    }
+}
 
         stage('Quality Gate') {
             steps {
