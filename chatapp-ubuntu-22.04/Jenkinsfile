@@ -21,6 +21,12 @@ pipeline {
             }
         }
 
+        stage('Debug Workspace') {
+    steps {
+        sh "ls -R ${WORKSPACE}"
+    }
+}
+
         stage('SonarQube Analysis') {
             steps {
                 script {
