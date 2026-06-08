@@ -1,43 +1,30 @@
 pipeline {
-    agent {
-        label 'djangonode'
-    }
+    agent { label 'djangonode' }
 
     environment {
         DJANGO_HOST = "172.31.46.208"
         DJANGO_USER = "django_user"
         REMOTE_PATH = "/chatapp-ubuntu-22.04"
-
-        // 🔥 FIX: Force Sonar to use system Node (prevents embedded runtime crash)
-        SONAR_SCANNER_OPTS = "-Dsonar.javascript.node=/usr/bin/node"
     }
 
     stages {
 
-        stage('Clone Repository') {
+        stage('Checkout') {
             steps {
                 git branch: 'main',
                     url: 'https://github.com/Maverick1950/Jenkins_chat_app.git'
             }
         }
 
-        
-
         stage('SonarQube Analysis') {
-    steps {
-        script {
-            def scannerHome = tool 'SonarScanner'
-
-            withSonarQubeEnv('Sonarqube') {
-                sh """
-                cd ${WORKSPACE}
-                ls -la
-                ${scannerHome}/bin/sonar-scanner
-                """
+            steps {
+                withSonarQubeEnv('Sonarqube') {
+                    sh """
+                    /home/ubuntu/jenkins/tools/hudson.plugins.sonar.SonarRunnerInstallation/SonarScanner/bin/sonar-scanner
+                    """
+                }
             }
         }
-    }
-}
 
         stage('Quality Gate') {
             steps {
@@ -47,12 +34,12 @@ pipeline {
             }
         }
 
-        stage('Copy Code To Django Server') {
+        stage('Deploy to Django Server') {
             steps {
                 sshagent(credentials: ['agent-key']) {
                     sh """
                     rsync -av --delete \
-                    -e \"ssh -o StrictHostKeyChecking=no\" \
+                    -e "ssh -o StrictHostKeyChecking=no" \
                     --exclude '.git' \
                     --exclude 'venv' \
                     ${WORKSPACE}/chatapp-ubuntu-22.04/ \
@@ -67,8 +54,8 @@ pipeline {
                 sshagent(credentials: ['agent-key']) {
                     sh """
                     ssh -o StrictHostKeyChecking=no ${DJANGO_USER}@${DJANGO_HOST} '
-                        cd /chatapp-ubuntu-22.04/fundoo && \
-                        source venv/bin/activate && \
+                        cd /chatapp-ubuntu-22.04/fundoo &&
+                        source venv/bin/activate &&
                         python manage.py migrate --noinput
                     '
                     """
