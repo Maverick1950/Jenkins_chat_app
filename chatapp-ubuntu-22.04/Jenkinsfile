@@ -1,5 +1,7 @@
 pipeline {
-agent any
+agent {
+    label 'djangonode'
+}
 environment {
     DJANGO_HOST = "172.31.46.208"
     DJANGO_USER = "django_user"
@@ -41,7 +43,7 @@ stage('Quality Gate') {
 
     stage('Copy Code To Django Server') {
         steps {
-            sshagent(credentials: ['controller-key']) {
+            sshagent(credentials: ['agent-key']) {
                 sh '''
                 rsync -av --delete \
                 -e "ssh -o StrictHostKeyChecking=no" \
@@ -56,7 +58,7 @@ stage('Quality Gate') {
 
     stage('Run Migration') {
         steps {
-            sshagent(credentials: ['controller-key']) {
+            sshagent(credentials: ['agent-key']) {
                 sh '''
                 ssh -o StrictHostKeyChecking=no \
                 ${DJANGO_USER}@${DJANGO_HOST} "
@@ -71,7 +73,7 @@ stage('Quality Gate') {
 
     stage('Restart Gunicorn') {
         steps {
-            sshagent(credentials: ['controller-key']) {
+            sshagent(credentials: ['agent-key']) {
                 sh '''
                 ssh -o StrictHostKeyChecking=no \
                 ${DJANGO_USER}@${DJANGO_HOST} "
